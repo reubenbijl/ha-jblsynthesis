@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Lint and test jobs check out the arcam_fmj fork next to the integration and put its
+# src/ on PYTHONPATH, mirroring what .devtools/run does locally: the JBL Synthesis
+# additions are not on PyPI, so the published arcam-fmj release cannot be used.
+jobs:
+  lint:
+    name: Lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: reubenbijl/arcam_fmj
+          ref: jbl-synthesis-support
+          path: .arcam_fmj
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements-test.txt
+      - name: ruff check
+        run: ruff check .
+      - name: ruff format
+        run: ruff format --check .
+      # Strict typing. arcam-fmj ships py.typed, so its types reach this integration
+      # rather than silently degrading to Any.
+      - name: mypy
+        run: mypy custom_components/jblsynthesis
+        env:
+          MYPYPATH: ${{ github.workspace }}/.arcam_fmj/src
+          PYTHONPATH: ${{ github.workspace }}/.arcam_fmj/src
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with:
+          repository: reubenbijl/arcam_fmj
+          ref: jbl-synthesis-support
+          path: .arcam_fmj
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements-test.txt
+      # config-flow-test-coverage requires 100% of config_flow.py; the whole integration
+      # is held to the same bar, so any gap fails here.
+      - name: pytest
+        run: >-
+          pytest tests/
+          --cov=custom_components.jblsynthesis
+          --cov-report=term-missing
+          --cov-fail-under=100
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.arcam_fmj/src
+
+  hassfest:
+    name: hassfest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Home Assistant's own validator: checks the manifest, the quality_scale file,
+      # and strings/icons/translations.
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hacs/action@main
+        with:
+          category: integration

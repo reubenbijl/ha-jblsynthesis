@@ -1,0 +1,78 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to your JBL Synthesis receiver",
+        "description": "Enter the address of your SDR-35, SDR-38, SDP-55 or SDP-58. IP control must be enabled on the unit (General Setup, Control) and the receiver must be awake.",
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]"
+        },
+        "data_description": {
+          "host": "The receiver's hostname or IP address, shown on the unit under Network Settings.",
+          "port": "The IP control port. Leave at 50000 unless you have changed it."
+        }
+      },
+      "reconfigure": {
+        "title": "Change your receiver's address",
+        "description": "Enter the new address. It must be the same receiver this entry was created for.",
+        "data": {
+          "host": "[%key:common::config_flow::data::host%]",
+          "port": "[%key:common::config_flow::data::port%]"
+        },
+        "data_description": {
+          "host": "[%key:component::jblsynthesis::config::step::user::data_description::host%]",
+          "port": "[%key:component::jblsynthesis::config::step::user::data_description::port%]"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "invalid_response": "The device answered, but it does not speak the JBL Synthesis control protocol.",
+      "unknown": "[%key:common::config_flow::error::unknown%]"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]",
+      "wrong_device": "That address is a different receiver. Add it as a new device instead of reconfiguring this one."
+    }
+  },
+  "entity": {
+    "select": {
+      "room_eq": {
+        "name": "Room EQ"
+      }
+    },
+    "sensor": {
+      "audio_format": {
+        "name": "Audio format"
+      },
+      "input_name": {
+        "name": "Input name"
+      },
+      "incoming_video": {
+        "name": "Incoming video"
+      },
+      "sample_rate": {
+        "name": "Sample rate"
+      },
+      "bitrate": {
+        "name": "Bitrate"
+      },
+      "dialnorm": {
+        "name": "Dialogue normalisation"
+      }
+    }
+  },
+  "exceptions": {
+    "command_failed": {
+      "message": "The receiver rejected the command: {error}"
+    },
+    "invalid_source": {
+      "message": "\"{source}\" is not one of the receiver's inputs."
+    },
+    "invalid_sound_mode": {
+      "message": "\"{sound_mode}\" is not available for the current stream."
+    }
+  }
+}

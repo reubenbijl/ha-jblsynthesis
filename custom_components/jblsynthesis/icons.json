@@ -1,0 +1,29 @@
+{
+  "entity": {
+    "select": {
+      "room_eq": {
+        "default": "mdi:tune-vertical"
+      }
+    },
+    "sensor": {
+      "audio_format": {
+        "default": "mdi:surround-sound"
+      },
+      "input_name": {
+        "default": "mdi:import"
+      },
+      "incoming_video": {
+        "default": "mdi:video-input-hdmi"
+      },
+      "sample_rate": {
+        "default": "mdi:sine-wave"
+      },
+      "bitrate": {
+        "default": "mdi:speedometer"
+      },
+      "dialnorm": {
+        "default": "mdi:volume-equal"
+      }
+    }
+  }
+}

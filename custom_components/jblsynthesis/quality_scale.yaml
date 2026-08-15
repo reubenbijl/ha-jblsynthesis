@@ -1,0 +1,210 @@
+# Home Assistant's integration quality scale, tracked rule by rule.
+#
+# The `quality_scale` key is deliberately absent from manifest.json. The scale is only
+# formally assessed for integrations in home-assistant/core, so declaring a tier in a
+# HACS integration asserts a badge nobody verifies. This file is the honest record: the
+# integration is built to gold, and every rule below says so or says why it is exempt.
+
+rules:
+  # ------------------------------------------------------------------ Bronze
+  action-setup:
+    status: exempt
+    comment: |
+      The integration registers no service actions. Everything is exposed through entity
+      platforms, so there is nothing to register in async_setup.
+  appropriate-polling:
+    status: exempt
+    comment: |
+      Push integration. The arcam-fmj library maintains a persistent TCP connection and
+      its own update cycle over it; Home Assistant polls nothing.
+  brands:
+    status: todo
+    comment: Requires a pull request to home-assistant/brands.
+  common-modules:
+    status: done
+    comment: |
+      Connection runtime in runtime.py (a coordinator would misrepresent the push
+      model), base entity in entity.py.
+  config-flow-test-coverage:
+    status: done
+    comment: 100% of config_flow.py, enforced in CI.
+  config-flow:
+    status: done
+  dependency-transparency:
+    status: done
+    comment: |
+      arcam-fmj is MIT and developed in the open. The requirement currently points at a
+      personal fork carrying the JBL Synthesis additions (model recognition, Logic 16,
+      General Setup decoding) until they are merged upstream; the fork's branch is the
+      documented, reviewable delta.
+  docs-actions:
+    status: exempt
+    comment: No service actions to document.
+  docs-high-level-description:
+    status: done
+    comment: README. The home-assistant.io page is a core requirement, not a HACS one.
+  docs-installation-instructions:
+    status: done
+    comment: README, covering both HACS and manual installation.
+  docs-removal-instructions:
+    status: done
+    comment: README.
+  entity-event-setup:
+    status: done
+    comment: |
+      Entities subscribe to the runtime's dispatcher signal in async_added_to_hass and
+      Home Assistant removes the subscription via async_on_remove.
+  entity-unique-id:
+    status: done
+    comment: |
+      All entities key off the receiver's UPnP unique id, falling back to the config
+      entry id when the UPnP description is unavailable.
+  has-entity-name:
+    status: done
+  runtime-data:
+    status: done
+    comment: Typed via JBLSynthesisConfigEntry.
+  test-before-configure:
+    status: done
+    comment: |
+      The config flow requests the AMX Duet identity, which proves reachability, that
+      the device speaks the protocol, and captures make/model for the entry.
+  test-before-setup:
+    status: done
+    comment: |
+      async_setup_entry raises ConfigEntryNotReady when the receiver is unreachable,
+      which in deep standby it always is; setup retry picks it up when it wakes.
+  unique-config-entry:
+    status: done
+    comment: |
+      Unique ID from the receiver's UPnP description; duplicate hosts are refused even
+      when that id is unavailable.
+
+  # ------------------------------------------------------------------ Silver
+  action-exceptions:
+    status: done
+    comment: |
+      Commands raise HomeAssistantError with a translation key; invalid options for
+      source, sound mode and room EQ raise ServiceValidationError.
+  config-entry-unloading:
+    status: done
+  docs-configuration-parameters:
+    status: exempt
+    comment: |
+      No options flow. Host and port are the only settings, changed through the
+      reconfigure flow.
+  docs-installation-parameters:
+    status: done
+    comment: README documents host and port and where to find them on the receiver.
+  entity-unavailable:
+    status: done
+    comment: |
+      Entities are unavailable whenever the TCP connection is down, which includes deep
+      standby, where the receiver leaves the network entirely.
+  integration-owner:
+    status: done
+  log-when-unavailable:
+    status: done
+    comment: The runtime logs once when the connection drops and once on recovery.
+  parallel-updates:
+    status: done
+    comment: |
+      PARALLEL_UPDATES = 0 on every platform: updates are pushed, and commands are
+      serialised by the library's own send queue.
+  reauthentication-flow:
+    status: exempt
+    comment: The control protocol is unauthenticated.
+  test-coverage:
+    status: done
+    comment: 100%, enforced in CI.
+
+  # -------------------------------------------------------------------- Gold
+  devices:
+    status: done
+    comment: All entities belong to one device, identified from the config entry.
+  diagnostics:
+    status: done
+    comment: Host redacted; the full library state dictionary is included.
+  discovery-update-info:
+    status: exempt
+    comment: No discovery, see the discovery rule.
+  discovery:
+    status: exempt
+    comment: |
+      The receiver leaves the network entirely in deep standby, which makes discovery
+      unreliable at exactly the moment people set integrations up, and the SSDP
+      manufacturer string of the JBL-branded units is unverified against hardware.
+      Revisit once the SSDP description has been captured from a live SDR-35.
+  docs-data-update:
+    status: done
+    comment: README explains the push model and the reconnect behaviour.
+  docs-examples:
+    status: done
+    comment: README includes a dashboard example replacing the Node-RED card.
+  docs-known-limitations:
+    status: done
+    comment: |
+      README documents deep standby (unreachable, cannot power on over IP), the IP
+      control setting, and single-zone support.
+  docs-supported-devices:
+    status: done
+  docs-supported-functions:
+    status: done
+    comment: README lists every entity and what it controls.
+  docs-troubleshooting:
+    status: done
+  docs-use-cases:
+    status: done
+  dynamic-devices:
+    status: exempt
+    comment: A config entry is one receiver, which cannot gain sub-devices.
+  entity-category:
+    status: done
+    comment: |
+      Stream diagnostics (sample rate, bitrate, dialnorm) are DIAGNOSTIC; room EQ is
+      CONFIG.
+  entity-device-class:
+    status: done
+    comment: |
+      The media player is a receiver; sensors carry frequency and data-rate classes
+      where a class exists for the quantity.
+  entity-disabled-by-default:
+    status: exempt
+    comment: |
+      Every entity is either primary state or a lightweight read-out of frames already
+      being received; none is noisy enough to justify shipping disabled.
+  entity-translations:
+    status: done
+  exception-translations:
+    status: done
+  icon-translations:
+    status: done
+  reconfiguration-flow:
+    status: done
+    comment: |
+      Refuses to repoint an entry at a different receiver when the UPnP unique id is
+      available to prove it.
+  repair-issues:
+    status: exempt
+    comment: |
+      No condition the user can act on is detectable. An unreachable receiver is
+      already surfaced as unavailable, which is the right severity for a unit that is
+      simply in deep standby.
+  stale-devices:
+    status: exempt
+    comment: One device per config entry, removed with the entry.
+
+  # ---------------------------------------------------------------- Platinum
+  async-dependency:
+    status: done
+    comment: arcam-fmj is asyncio throughout.
+  inject-websession:
+    status: done
+    comment: |
+      The control connection is a raw TCP socket owned by the library, not HTTP. The
+      one HTTP call (fetching the UPnP unique id) uses Home Assistant's shared session.
+  strict-typing:
+    status: done
+    comment: |
+      Fully annotated and checked with mypy in strict terms in CI. arcam-fmj ships a
+      PEP 561 py.typed marker, so its types reach this integration.

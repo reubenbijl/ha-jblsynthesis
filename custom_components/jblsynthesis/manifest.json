@@ -1,0 +1,19 @@
+{
+  "domain": "jblsynthesis",
+  "name": "JBL Synthesis",
+  "codeowners": [
+    "@reubenbijl"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/reubenbijl/ha-jblsynthesis",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/reubenbijl/ha-jblsynthesis/issues",
+  "loggers": [
+    "arcam"
+  ],
+  "requirements": [
+    "arcam-fmj @ git+https://github.com/reubenbijl/arcam_fmj.git@jbl-synthesis-support"
+  ],
+  "version": "0.1.0"
+}

@@ -1,0 +1,15 @@
+# Pulls in Home Assistant itself. Deliberately unpinned so the suite runs against the
+# current release; pin it here if you need a reproducible older target.
+pytest-homeassistant-custom-component
+
+# arcam-fmj itself is deliberately NOT listed. The published release lacks the JBL
+# Synthesis additions, so tests always run against the sibling ../arcam_fmj checkout on
+# PYTHONPATH (see .devtools/run locally and the CI workflow). Its runtime dependencies
+# are installed here so the import works; aiohttp already ships with Home Assistant.
+attrs>18.1
+defusedxml>=0.7.1
+serialx>=1.7.0
+
+# Quality tooling, matching what CI runs.
+ruff
+mypy
