@@ -17,6 +17,7 @@ Engineering Menu decoding) until they are merged upstream.
 | Input name sensor | The user-assigned name of the current input |
 | Incoming video sensor | e.g. `3840x2160p60 (Dolby Vision)` |
 | Sample rate, bitrate, dialogue normalisation | Stream diagnostics |
+| Control connection switch | Releases the receiver's single control connection for other tools (see below) |
 
 Diagnostics download and full unit-test coverage are included; the quality bar is
 tracked rule-by-rule in
@@ -92,6 +93,22 @@ target:
 data:
   volume_level: 0.4545   # 45 on the receiver's 0-99 scale
 ```
+
+## Sharing the receiver with Dirac Live
+
+The receiver accepts **one control connection at a time**. While this integration is
+connected, tools that need their own connection — Dirac Live calibration above all —
+cannot reach the unit.
+
+Turn **Control connection** off to release the connection: every other entity goes
+unavailable (the integration genuinely knows nothing while disconnected), the switch
+itself stays available, and the port is free for Dirac Live. When you are done, turn it
+back on: the integration reconnects and re-reads the full receiver state, so nothing
+needs a manual refresh — including a Dirac calibration you just changed, since the
+room-EQ slot names are re-fetched too.
+
+The setting is not persisted: a Home Assistant restart reconnects. If you restart Home
+Assistant mid-calibration, turn the switch off again before resuming.
 
 ## Known limitations
 

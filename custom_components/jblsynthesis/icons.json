@@ -24,6 +24,14 @@
       "dialnorm": {
         "default": "mdi:volume-equal"
       }
+    },
+    "switch": {
+      "connection": {
+        "default": "mdi:lan-connect",
+        "state": {
+          "off": "mdi:lan-disconnect"
+        }
+      }
     }
   }
 }

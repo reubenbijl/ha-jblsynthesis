@@ -161,8 +161,8 @@ rules:
   entity-category:
     status: done
     comment: |
-      Stream diagnostics (sample rate, bitrate, dialnorm) are DIAGNOSTIC; room EQ is
-      CONFIG.
+      Stream diagnostics (sample rate, bitrate, dialnorm) are DIAGNOSTIC; room EQ and
+      the control-connection switch are CONFIG.
   entity-device-class:
     status: done
     comment: |
