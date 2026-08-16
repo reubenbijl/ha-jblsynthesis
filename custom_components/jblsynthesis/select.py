@@ -45,12 +45,22 @@ class JBLSynthesisRoomEqSelect(JBLSynthesisEntity, SelectEntity):
         self._attr_unique_id = f"{self.device_identifier}_room_eq"
 
     def _slot_names(self) -> list[str]:
-        """Return a display name per EQ slot, falling back to generic labels."""
+        """Return a display name per EQ slot, falling back to generic labels.
+
+        The receiver truncates long names to 20 characters, which can leave two
+        slots reading identically (seen in the wild with two "Dirac Live Room
+        C..." slots), so duplicates get the slot number appended — options must
+        stay distinct for selection to be able to target every slot.
+        """
         names = self.runtime.state.get_room_eq_names() or []
-        return [
-            name if index < len(names) and (name := names[index]) else f"EQ {index + 1}"
-            for index in range(len(EQ_SLOTS))
-        ]
+        labels: list[str] = []
+        for index in range(len(EQ_SLOTS)):
+            name = names[index] if index < len(names) else ""
+            label = name or f"EQ {index + 1}"
+            if label in labels:
+                label = f"{label} ({index + 1})"
+            labels.append(label)
+        return labels
 
     @property
     def options(self) -> list[str]:

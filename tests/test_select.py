@@ -69,6 +69,38 @@ async def test_states(
     assert hass.states.get(ENTITY).state == "unknown"
 
 
+async def test_duplicate_slot_names_stay_selectable(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_library: tuple[MagicMock, MagicMock],
+) -> None:
+    """Two slots truncated to the same name are disambiguated by slot number.
+
+    Seen on a real SDR-35: the receiver truncates names to 20 characters, so
+    two Dirac calibrations can read identically.
+    """
+    mock_client, mock_state = mock_library
+    mock_state.get_room_eq_names.return_value = [
+        "Dirac Live Room C...",
+        "Dirac Live Room C...",
+        "Rears Only",
+    ]
+    mock_state.get_room_equalization.return_value = RoomEqMode.EQ2
+    await push_update(hass, mock_client)
+
+    state = hass.states.get(ENTITY)
+    assert state.attributes[ATTR_OPTIONS] == [
+        "Off",
+        "Dirac Live Room C...",
+        "Dirac Live Room C... (2)",
+        "Rears Only",
+    ]
+    assert state.state == "Dirac Live Room C... (2)"
+
+    await _select(hass, "Dirac Live Room C... (2)")
+    mock_state.set_room_equalization.assert_awaited_with(RoomEqMode.EQ2)
+
+
 async def test_fallback_names_without_report(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,

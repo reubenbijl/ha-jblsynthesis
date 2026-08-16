@@ -38,7 +38,7 @@ async def test_user_flow(
         CONF_HOST: HOST,
         CONF_PORT: PORT,
         CONF_MODEL: "SDR-35",
-        CONF_MANUFACTURER: "JBL",
+        CONF_MANUFACTURER: "JBL SYNTHESIS",
     }
     assert result["result"].unique_id == UNIQUE_ID
 

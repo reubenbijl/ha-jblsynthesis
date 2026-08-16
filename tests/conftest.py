@@ -57,7 +57,7 @@ def amx_response() -> AmxDuetResponse:
     return AmxDuetResponse(
         {
             "Device-SDKClass": "Receiver",
-            "Device-Make": "JBL",
+            "Device-Make": "JBL SYNTHESIS",
             "Device-Model": "SDR-35",
             "Device-Revision": "2.05",
         }
@@ -205,7 +205,7 @@ def mock_config_entry() -> MockConfigEntry:
             CONF_HOST: HOST,
             CONF_PORT: PORT,
             CONF_MODEL: "SDR-35",
-            CONF_MANUFACTURER: "JBL",
+            CONF_MANUFACTURER: "JBL SYNTHESIS",
         },
         unique_id=UNIQUE_ID,
     )
