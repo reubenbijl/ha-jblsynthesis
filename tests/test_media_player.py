@@ -178,6 +178,8 @@ async def test_command_failure_is_translated(
     with pytest.raises(HomeAssistantError) as err:
         await _call(hass, SERVICE_TURN_ON)
     assert err.value.translation_key == "command_failed"
+    # A bare TimeoutError has no message; the placeholder must never be blank.
+    assert err.value.translation_placeholders["error"]
 
 
 def test_label_fallbacks() -> None:

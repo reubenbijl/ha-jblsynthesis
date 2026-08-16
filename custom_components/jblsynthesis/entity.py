@@ -77,5 +77,7 @@ class JBLSynthesisEntity(Entity):
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="command_failed",
-                translation_placeholders={"error": str(err)},
+                # A bare TimeoutError stringifies to nothing, which made for a
+                # baffling empty toast; fall back to the exception type.
+                translation_placeholders={"error": str(err) or type(err).__name__},
             ) from err
