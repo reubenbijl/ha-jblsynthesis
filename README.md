@@ -101,9 +101,11 @@ across raw TCP (50000) and websocket (50001) combined** (measured on an SDR-35).
 Connections beyond the pool are not refused: TCP connects and even the websocket
 handshake succeed, but requests are silently ignored, which makes the failure look
 like anything except a connection limit. While this integration is connected it
-permanently occupies one slot, so only one other tool — the JBL app, the web UI, or
-Dirac Live calibration — can work alongside it, and a stray open app can starve
-Dirac without any error message.
+permanently occupies one slot. Tools like the web client and Dirac Live appear to
+use **two** connections each (one command channel, one live-values channel), which
+means Dirac cannot run at all while this integration holds its slot — **turn the
+Control connection switch off before every calibration session**, and treat a
+stray open JBL app as another silent slot-holder.
 
 Turn **Control connection** off to release the connection: every other entity goes
 unavailable (the integration genuinely knows nothing while disconnected), the switch
