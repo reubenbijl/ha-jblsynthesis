@@ -163,6 +163,9 @@ async def test_reconfigure(
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
+    # The abort schedules an entry reload; let it finish inside the test so its
+    # storage writes cannot linger past teardown (seen as flakes on slower CI).
+    await hass.async_block_till_done()
     assert mock_config_entry.data[CONF_HOST] == new_host
 
 
@@ -206,6 +209,9 @@ async def test_reconfigure_without_unique_id(
         )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
+    # The abort schedules an entry reload; let it finish inside the test so its
+    # storage writes cannot linger past teardown (seen as flakes on slower CI).
+    await hass.async_block_till_done()
     assert mock_config_entry.data[CONF_HOST] == new_host
 
 
@@ -232,3 +238,6 @@ async def test_reconfigure_error_and_recovery(
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
+    # The abort schedules an entry reload; let it finish inside the test so its
+    # storage writes cannot linger past teardown (seen as flakes on slower CI).
+    await hass.async_block_till_done()

@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import MagicMock
 
+import pytest
+from arcam.fmj.errors import ConnectionFailed
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
@@ -30,11 +32,15 @@ async def _call(hass: HomeAssistant, service: str) -> None:
 
 
 async def _wait_for_start_count(mock_client: MagicMock, count: int) -> None:
-    """Yield to the event loop until the background task has reconnected."""
-    for _ in range(20):
+    """Yield to the event loop until the background task has reconnected.
+
+    Real sleeps, not zero-yields: the retake path waits out RECONNECT_INTERVAL
+    between attempts, so wall time has to pass for the retry timer to fire.
+    """
+    for _ in range(50):
         if mock_client.start.await_count >= count:
             return
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.01)
     raise AssertionError(f"client.start not awaited {count} times")
 
 
@@ -75,6 +81,31 @@ async def test_release_and_retake(
     mock_client.connected = True
     await push_update(hass, mock_client)
     assert hass.states.get(PLAYER).state != "unavailable"
+
+
+async def test_retake_retries_until_receiver_answers(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_library: tuple[MagicMock, MagicMock],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Retaking keeps trying if the receiver does not answer immediately.
+
+    Covers the retry-sleep inside _reconnect, which only runs when the first
+    attempt of a switch retake fails (the in-service reconnect loop has its
+    own retry path).
+    """
+    from custom_components.jblsynthesis import runtime as runtime_module
+
+    monkeypatch.setattr(runtime_module, "RECONNECT_INTERVAL", 0.01)
+    mock_client, _ = mock_library
+
+    await _call(hass, SERVICE_TURN_OFF)
+    mock_client.start.side_effect = [ConnectionFailed(), None]
+
+    await _call(hass, SERVICE_TURN_ON)
+    await _wait_for_start_count(mock_client, 3)
+    assert hass.states.get(ENTITY).state == "on"
 
 
 async def test_toggle_is_idempotent(
