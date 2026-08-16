@@ -164,22 +164,36 @@ async def test_select_invalid_sound_mode(
         )
 
 
-@pytest.mark.parametrize("error", [ArcamException("rejected"), TimeoutError()])
 async def test_command_failure_is_translated(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
     mock_library: tuple[MagicMock, MagicMock],
-    error: Exception,
 ) -> None:
-    """A rejected command surfaces as a translated error."""
+    """A rejected command surfaces as a translated, never-blank error."""
     _, mock_state = mock_library
-    mock_state.set_power.side_effect = error
+    mock_state.set_power.side_effect = ArcamException("rejected")
 
     with pytest.raises(HomeAssistantError) as err:
         await _call(hass, SERVICE_TURN_ON)
     assert err.value.translation_key == "command_failed"
-    # A bare TimeoutError has no message; the placeholder must never be blank.
     assert err.value.translation_placeholders["error"]
+
+
+async def test_command_timeout_is_tolerated(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_library: tuple[MagicMock, MagicMock],
+) -> None:
+    """A missing command echo is not an error on this firmware.
+
+    The receiver executes RC5-simulated commands (input, mute, decode mode,
+    power) without echoing the command frame; the status push that follows
+    updates the entities, so the service call must succeed quietly.
+    """
+    _, mock_state = mock_library
+    mock_state.set_power.side_effect = TimeoutError()
+
+    await _call(hass, SERVICE_TURN_ON)
 
 
 def test_label_fallbacks() -> None:

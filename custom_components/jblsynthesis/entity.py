@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Coroutine
 from typing import Any
 
@@ -15,6 +16,8 @@ from homeassistant.helpers.entity import Entity
 
 from .const import CONF_MANUFACTURER, DEFAULT_MANUFACTURER, DOMAIN
 from .runtime import JBLSynthesisRuntime
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class JBLSynthesisEntity(Entity):
@@ -66,18 +69,21 @@ class JBLSynthesisEntity(Entity):
     async def _async_call(self, coro: Coroutine[Any, Any, Any]) -> None:
         """Send a command to the receiver.
 
-        No refresh is needed afterwards: the receiver echoes every accepted command as a
-        status frame, which flows back through the dispatcher. Library errors become a
-        HomeAssistantError carrying a translation key, so what the user sees is
-        localised rather than raw client output.
+        No refresh is needed afterwards: state changes flow back as status frames
+        through the dispatcher. A timeout is not treated as failure — this firmware
+        executes several RC5-simulated commands (input, mute, decode mode, power)
+        without echoing the command frame, and the resulting status push arrives
+        within a second regardless. Real rejections carry an answer code and become
+        a HomeAssistantError with a translation key.
         """
         try:
             await coro
-        except (ArcamException, TimeoutError) as err:
+        except TimeoutError as err:
+            _LOGGER.debug("Receiver did not acknowledge a command: %r", err)
+        except ArcamException as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="command_failed",
-                # A bare TimeoutError stringifies to nothing, which made for a
-                # baffling empty toast; fall back to the exception type.
+                # Fall back to the type for exceptions that stringify to nothing.
                 translation_placeholders={"error": str(err) or type(err).__name__},
             ) from err
