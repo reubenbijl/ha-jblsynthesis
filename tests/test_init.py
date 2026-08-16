@@ -88,6 +88,43 @@ async def test_reconnects_after_connection_loss(
     assert "Connection to 192.168.128.18 re-established" in caplog.text
 
 
+async def test_immediate_reconnect_is_not_an_outage(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_library: tuple[MagicMock, MagicMock],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A drop the receiver hands straight back never warns about availability.
+
+    Home Assistant's startup congestion stalls the event loop past the library's
+    read timeout often enough that this is the common case, and it self-heals in
+    milliseconds — warning about it would cry wolf at every restart.
+    """
+    mock_client, _ = mock_library
+    reconnected = asyncio.Event()
+    process_calls = []
+
+    async def _process() -> None:
+        if not process_calls:
+            process_calls.append(1)
+            raise ConnectionFailed("Missed all pings")
+        reconnected.set()
+        await asyncio.Event().wait()
+
+    mock_client.process.side_effect = _process
+
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    async with asyncio.timeout(5):
+        await reconnected.wait()
+
+    assert mock_client.start.await_count == 2
+    assert "lost" not in caplog.text
+    assert "Missed all pings" in caplog.text
+
+
 async def test_entities_track_connection_state(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,

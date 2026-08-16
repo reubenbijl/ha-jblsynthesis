@@ -117,6 +117,9 @@ class JBLSynthesisRuntime:
     async def _run(self, connect_first: bool) -> None:
         """Service the connection, reconnecting with a fixed delay when it drops.
 
+        A drop is only reported as an outage once an immediate reconnect has failed,
+        because a connection the receiver hands straight back was never really down.
+
         The task lives until the connection is released or the entry unloads; both
         cancel it through async_set_enabled/async_shutdown.
         """
@@ -126,33 +129,56 @@ class JBLSynthesisRuntime:
                 _LOGGER.info("Connection to %s established", self.client.host)
                 async_dispatcher_send(self.hass, self.signal)
             while True:
+                reason = "no error"
                 try:
                     await self.client.process()
                 except (ConnectionFailed, NotConnectedException, OSError) as err:
-                    _LOGGER.debug("Connection error: %s", err)
+                    reason = str(err) or type(err).__name__
                 await self.client.stop()
-                # Silver log-when-unavailable: once on the way down...
-                _LOGGER.warning(
-                    "Connection to %s lost, retrying every %d seconds",
-                    self.client.host,
-                    int(RECONNECT_INTERVAL),
-                )
                 async_dispatcher_send(self.hass, self.signal)
-                await self._reconnect()
-                # ...and once on recovery.
-                _LOGGER.warning("Connection to %s re-established", self.client.host)
+                if await self._try_connect():
+                    # Home Assistant's own startup regularly stalls the event loop
+                    # past the library's ten-second read timeout, so the client
+                    # declares dead a connection the receiver is still holding open
+                    # and hands straight back. Retaken in milliseconds, that is not
+                    # an outage to warn about — a drop the receiver refuses to
+                    # accept again is.
+                    _LOGGER.info(
+                        "Connection to %s dropped (%s) and was retaken immediately",
+                        self.client.host,
+                        reason,
+                    )
+                else:
+                    # Silver log-when-unavailable: once on the way down...
+                    _LOGGER.warning(
+                        "Connection to %s lost (%s), retrying every %d seconds",
+                        self.client.host,
+                        reason,
+                        int(RECONNECT_INTERVAL),
+                    )
+                    while True:
+                        await asyncio.sleep(RECONNECT_INTERVAL)
+                        if await self._try_connect():
+                            break
+                    # ...and once on recovery.
+                    _LOGGER.warning("Connection to %s re-established", self.client.host)
                 async_dispatcher_send(self.hass, self.signal)
+
+    async def _try_connect(self) -> bool:
+        """Make one connection attempt, reporting whether it succeeded."""
+        try:
+            async with asyncio.timeout(CONNECT_TIMEOUT):
+                await self.client.start()
+        except (ConnectionFailed, OSError, TimeoutError, ArcamException):
+            return False
+        return True
 
     async def _reconnect(self) -> None:
         """Connect until it works: immediately first, then at a fixed interval."""
         while True:
-            try:
-                async with asyncio.timeout(CONNECT_TIMEOUT):
-                    await self.client.start()
-            except (ConnectionFailed, OSError, TimeoutError, ArcamException):
-                await asyncio.sleep(RECONNECT_INTERVAL)
-                continue
-            return
+            if await self._try_connect():
+                return
+            await asyncio.sleep(RECONNECT_INTERVAL)
 
     @callback
     def _on_packet(self, packet: ResponsePacket | AmxDuetResponse) -> None:
