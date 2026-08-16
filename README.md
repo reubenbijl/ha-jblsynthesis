@@ -96,9 +96,14 @@ data:
 
 ## Sharing the receiver with Dirac Live
 
-The receiver accepts **one control connection at a time**. While this integration is
-connected, tools that need their own connection — Dirac Live calibration above all —
-cannot reach the unit.
+The receiver services only a **small pool of control clients at a time — about two,
+across raw TCP (50000) and websocket (50001) combined** (measured on an SDR-35).
+Connections beyond the pool are not refused: TCP connects and even the websocket
+handshake succeed, but requests are silently ignored, which makes the failure look
+like anything except a connection limit. While this integration is connected it
+permanently occupies one slot, so only one other tool — the JBL app, the web UI, or
+Dirac Live calibration — can work alongside it, and a stray open app can starve
+Dirac without any error message.
 
 Turn **Control connection** off to release the connection: every other entity goes
 unavailable (the integration genuinely knows nothing while disconnected), the switch
