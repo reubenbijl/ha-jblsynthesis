@@ -13,7 +13,7 @@
     "arcam"
   ],
   "requirements": [
-    "arcam-fmj @ git+https://github.com/reubenbijl/arcam_fmj.git@jbl-synthesis-support"
+    "arcam-fmj @ https://github.com/reubenbijl/arcam_fmj/archive/refs/heads/jbl-synthesis-support.zip"
   ],
   "version": "0.1.0"
 }
