@@ -104,11 +104,11 @@ class JBLSynthesisMediaPlayer(JBLSynthesisEntity, MediaPlayerEntity):
 
     @property
     def state(self) -> MediaPlayerState | None:
-        """Return standby/on, or None before the first power frame arrives."""
+        """Return off (standby)/on, or None before the first power frame arrives."""
         power = self.runtime.state.get_power()
         if power is None:
             return None
-        return MediaPlayerState.ON if power else MediaPlayerState.STANDBY
+        return MediaPlayerState.ON if power else MediaPlayerState.OFF
 
     @property
     def volume_level(self) -> float | None:

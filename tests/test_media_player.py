@@ -79,12 +79,12 @@ async def test_standby_and_unknown_values(
     init_integration: MockConfigEntry,
     mock_library: tuple[MagicMock, MagicMock],
 ) -> None:
-    """Standby and not-yet-received values map to standby/unknown."""
+    """Standby and not-yet-received values map to off/unknown."""
     mock_client, mock_state = mock_library
 
     mock_state.get_power.return_value = False
     await push_update(hass, mock_client)
-    assert hass.states.get(ENTITY).state == "standby"
+    assert hass.states.get(ENTITY).state == "off"
 
     mock_state.get_power.return_value = None
     mock_state.get_volume.return_value = None
