@@ -162,7 +162,8 @@ class JBLSynthesisMediaPlayer(JBLSynthesisEntity, MediaPlayerEntity):
         """Power the zone on.
 
         Only reaches the receiver when it is network-reachable, i.e. standby with
-        'Network on in standby' enabled. In deep standby nothing can reach it.
+        'HDMI Bypass & IP' on and Standby Mode set to Manual. In deep standby
+        nothing can reach it.
         """
         await self._async_call(self.runtime.state.set_power(True))
 

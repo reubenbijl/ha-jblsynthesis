@@ -137,7 +137,7 @@ rules:
       Revisit once the SSDP description has been captured from a live SDR-35.
   docs-data-update:
     status: done
-    comment: README explains the push model and the reconnect behaviour.
+    comment: README explains the push model, the paced re-reads and the reconnect behaviour.
   docs-examples:
     status: done
     comment: README includes a dashboard example replacing the Node-RED card.

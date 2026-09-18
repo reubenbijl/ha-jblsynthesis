@@ -3,14 +3,14 @@
     "step": {
       "user": {
         "title": "Connect to your JBL Synthesis receiver",
-        "description": "Enter the address of your SDR-35, SDR-38, SDP-55 or SDP-58. IP control must be enabled on the unit (General Setup, Control) and the receiver must be awake.",
+        "description": "Enter the address of your SDR-35, SDR-38, SDP-55 or SDP-58. On the unit, General Setup → Control must be set to IP, and the receiver must be awake.",
         "data": {
           "host": "Host",
           "port": "Port"
         },
         "data_description": {
           "host": "The receiver's hostname or IP address, shown on the unit under Network Settings.",
-          "port": "The IP control port. Leave at 50000 unless you have changed it."
+          "port": "The IP control port. The receiver always uses 50000, so change it only if you reach the unit through a port forward."
         }
       },
       "reconfigure": {
@@ -22,7 +22,7 @@
         },
         "data_description": {
           "host": "The receiver's hostname or IP address, shown on the unit under Network Settings.",
-          "port": "The IP control port. Leave at 50000 unless you have changed it."
+          "port": "The IP control port. The receiver always uses 50000, so change it only if you reach the unit through a port forward."
         }
       }
     },

@@ -25,11 +25,27 @@ tracked rule-by-rule in
 
 ## Requirements on the receiver
 
-- **IP control enabled**: General Setup → Control → On (or via RS232: hold the front
-  panel DIRECT button for four seconds). Off is the factory default.
-- **Network on in standby** if you want to power the unit on from Home Assistant. In
-  deep standby the receiver leaves the network entirely — nothing can wake it over IP,
-  and the integration shows its entities as unavailable until it returns.
+These are the settings JBL's own drivers for Control4, Crestron, RTI, ELAN and URC ask
+installers to make.
+
+- **General Setup → Control → IP.** The options are Off, RS232 and IP, and Off is the
+  factory default. Holding the front-panel DIRECT button for four seconds turns on
+  *RS232* control, not IP.
+- **HDMI Settings → HDMI Bypass & IP → On**, if you want to power the unit on from Home
+  Assistant. With it off, the receiver leaves the network entirely in standby: nothing
+  can wake it over IP, and the integration shows its entities as unavailable until the
+  unit is switched on another way.
+- **Standby Mode → Manual**, in the unit's Engineering menu. JBL's RTI driver notes that
+  with Standby Mode on Auto the unit ignores control commands while it is in standby.
+- **Firmware 1.42/09 or later.** Earlier firmware got several control commands wrong,
+  and JBL's URC and ELAN drivers require at least this version.
+- **A fixed address.** Give the receiver a static IP or a DHCP reservation. Its subnet
+  mask is always 255.255.255.0, so Home Assistant needs to be on the same /24 network or
+  reach it through a router.
+- **No other controller while Home Assistant is connected.** The unit sends its
+  feedback to whichever connection made the most recent request, and its own web page
+  and the JBL app count as connections. See
+  [Sharing the receiver with Dirac Live](#sharing-the-receiver-with-dirac-live).
 
 ## Installation
 
@@ -51,7 +67,7 @@ Settings → Devices & Services → *Add Integration* → **JBL Synthesis**.
 | Field | Meaning |
 | --- | --- |
 | Host | The receiver's hostname or IP address, shown on the unit under Network Settings |
-| Port | The IP control port — 50000 unless you have changed it |
+| Port | The IP control port. The receiver always uses 50000, so change it only if you reach the unit through a port forward |
 
 The receiver must be awake while you add it: the flow identifies the unit over the
 control connection (make and model) before creating the entry. If the address later
@@ -60,11 +76,22 @@ history are kept.
 
 ## How data flows
 
-This is a push integration. One TCP connection stays open; the receiver reports every
-state change on it (volume turned on the front panel included), and the library also
-cycles through status requests on the same connection. Home Assistant polls nothing.
-If the connection drops — deep standby, mains off, network blip — the integration
-retries every ten seconds and logs once on the way down and once on recovery.
+This is a push integration. One TCP connection stays open, and the receiver reports on
+it every change made with its front panel or remote. Home Assistant polls nothing; the
+library re-reads a little state on the same connection, paced the way JBL's own drivers
+do it:
+
+- every 5 seconds, what the receiver does not report by itself: the incoming stream
+  (format, sample rate, video, input name) and the decode mode that goes with it;
+- every 30 seconds, power, volume, mute and input, as a safety net, since the receiver
+  can send its reports to another controller instead;
+- every minute, everything else;
+- everything at once after connecting, after the unit powers on (and again ten seconds
+  later, once it has settled), and after an input change.
+
+In standby only the power state is read. If the connection drops — deep standby, mains
+off, network blip — the integration retries every ten seconds and logs once on the way
+down and once on recovery.
 
 ## Replacing a Node-RED dashboard card
 
@@ -119,8 +146,8 @@ Assistant mid-calibration, turn the switch off again before resuming.
 
 ## Known limitations
 
-- **Deep standby is unreachable.** With *Network on in standby* disabled, powering on
-  from Home Assistant is impossible over IP; use IR or enable that setting.
+- **Deep standby is unreachable.** With *HDMI Bypass & IP* off, powering on from Home
+  Assistant is impossible over IP; use IR or turn that setting on.
 - **Zone 1 only** for now. The hardware supports a second zone; support is planned once
   the single-zone integration has soaked.
 - The decode-mode list depends on the incoming stream, so a mode you can see on the
@@ -128,10 +155,13 @@ Assistant mid-calibration, turn the switch off again before resuming.
 
 ## Troubleshooting
 
-- *Config flow says it cannot connect*: confirm the receiver is awake, IP control is
-  enabled on the unit, and port 50000 is right.
+- *Config flow says it cannot connect*: confirm the receiver is awake, General Setup →
+  Control is set to IP, and port 50000 is right.
 - *Everything shows unavailable*: the connection is down — almost always deep standby.
   The integration reconnects by itself when the receiver returns.
+- *Turning the receiver on from Home Assistant does nothing*: check HDMI Bypass & IP is
+  on and Standby Mode is Manual (see
+  [Requirements on the receiver](#requirements-on-the-receiver)).
 - *Command rejected errors*: the receiver answers commands it cannot currently apply
   (for example during setup-menu use) with an error; the message carries the
   receiver's answer code.
