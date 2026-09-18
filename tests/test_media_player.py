@@ -101,6 +101,29 @@ async def test_standby_and_unknown_values(
     assert ATTR_SOUND_MODE_LIST not in state.attributes
 
 
+async def test_frame_recorded_by_the_library_after_our_listener(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_library: tuple[MagicMock, MagicMock],
+) -> None:
+    """Entities see a frame even when the library records it after our listener ran.
+
+    The client calls its listeners in no fixed order, and the library's State is one
+    of them. On an SDR-35 a volume step otherwise reached the entity only with the
+    next frame, 1.4-2.1 s later.
+    """
+    mock_client, mock_state = mock_library
+
+    def library_records_the_frame(packet: object) -> None:
+        mock_state.get_volume.return_value = 62
+
+    mock_client.listeners.append(library_records_the_frame)
+    await push_update(hass, mock_client)
+
+    state = hass.states.get(ENTITY)
+    assert state.attributes[ATTR_MEDIA_VOLUME_LEVEL] == pytest.approx(62 / 99)
+
+
 async def test_commands(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,

@@ -182,12 +182,16 @@ class JBLSynthesisRuntime:
 
     @callback
     def _on_packet(self, packet: ResponsePacket | AmxDuetResponse) -> None:
-        """Fan a received frame out to entities.
+        """Fan a received frame out to entities, once the library has recorded it.
 
-        The library's State has already recorded the packet by the time listeners run,
-        so entities can simply re-read their properties.
+        The library's State records frames in a listener of its own, and the client
+        calls its listeners in no fixed order. Signalled straight away, entities can
+        re-read the previous value and keep it until the next frame arrives, which
+        with the library's paced polling can be seconds later (seen on an SDR-35: a
+        volume step reached the dashboard 1.4-2.1 s after the unit confirmed it). So
+        the signal goes out on the next loop iteration, after every listener has run.
         """
-        async_dispatcher_send(self.hass, self.signal)
+        self.hass.loop.call_soon(async_dispatcher_send, self.hass, self.signal)
 
     async def async_shutdown(self) -> None:
         """Detach from the library and close the connection."""
