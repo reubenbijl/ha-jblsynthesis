@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from importlib.metadata import PackageNotFoundError, version
+from unittest.mock import MagicMock, patch
 
 from arcam.fmj.codecs import IncomingAudioFormat, SourceCodes
 from homeassistant.core import HomeAssistant
@@ -42,6 +43,7 @@ async def test_diagnostics(
     assert diagnostics["connected"] is True
     assert diagnostics["model"] == "SDR-35"
     assert diagnostics["revision"] == "2.05"
+    assert diagnostics["library_version"] == version("arcam-fmj")
 
     state = diagnostics["state"]
     assert state["POWER"] is True
@@ -53,3 +55,24 @@ async def test_diagnostics(
     assert state["RAW"] == "21 01"
     assert state["NESTED"] == {"names": ["Cinema", None]}
     assert state["OTHER"] == "(1+2j)"
+
+
+async def test_diagnostics_without_library_metadata(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    init_integration: MockConfigEntry,
+    mock_library: tuple[MagicMock, MagicMock],
+) -> None:
+    """A library imported from a source tree has no version to report."""
+    _, mock_state = mock_library
+    mock_state.to_dict.return_value = {}
+
+    with patch(
+        "custom_components.jblsynthesis.diagnostics.version",
+        side_effect=PackageNotFoundError("arcam-fmj"),
+    ):
+        diagnostics = await get_diagnostics_for_config_entry(
+            hass, hass_client, init_integration
+        )
+
+    assert diagnostics["library_version"] is None
