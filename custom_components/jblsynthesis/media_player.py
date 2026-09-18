@@ -178,11 +178,11 @@ class JBLSynthesisMediaPlayer(JBLSynthesisEntity, MediaPlayerEntity):
         )
 
     async def async_volume_up(self) -> None:
-        """Step the volume up 0.5 dB."""
+        """Step the volume up one unit of the receiver's 0-99 scale."""
         await self._async_call(self.runtime.state.inc_volume())
 
     async def async_volume_down(self) -> None:
-        """Step the volume down 0.5 dB."""
+        """Step the volume down one unit of the receiver's 0-99 scale."""
         await self._async_call(self.runtime.state.dec_volume())
 
     async def async_mute_volume(self, mute: bool) -> None:
