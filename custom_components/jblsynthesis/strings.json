@@ -73,6 +73,9 @@
     "command_failed": {
       "message": "The receiver rejected the command: {error}"
     },
+    "command_not_confirmed": {
+      "message": "The receiver did not confirm the change."
+    },
     "invalid_source": {
       "message": "\"{source}\" is not one of the receiver's inputs."
     },

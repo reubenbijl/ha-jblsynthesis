@@ -202,21 +202,35 @@ async def test_command_failure_is_translated(
     assert err.value.translation_placeholders["error"]
 
 
-async def test_command_timeout_is_tolerated(
+@pytest.mark.parametrize(
+    ("method", "service", "data"),
+    [
+        ("set_power", SERVICE_TURN_ON, None),
+        ("set_source", SERVICE_SELECT_SOURCE, {ATTR_INPUT_SOURCE: "UHD"}),
+        ("inc_volume", SERVICE_VOLUME_UP, None),
+    ],
+)
+async def test_command_not_confirmed_is_an_error(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
     mock_library: tuple[MagicMock, MagicMock],
+    method: str,
+    service: str,
+    data: dict | None,
 ) -> None:
-    """A missing command echo is not an error on this firmware.
+    """A command the receiver never confirmed fails the service call.
 
-    The receiver executes RC5-simulated commands (input, mute, decode mode,
-    power) without echoing the command frame; the status push that follows
-    updates the entities, so the service call must succeed quietly.
+    The library already allows for the missing echo of RC5-simulated
+    commands, confirming them from the state the receiver reports instead.
+    A timeout therefore means the change did not happen, and an automation
+    must be able to tell.
     """
     _, mock_state = mock_library
-    mock_state.set_power.side_effect = TimeoutError()
+    getattr(mock_state, method).side_effect = TimeoutError()
 
-    await _call(hass, SERVICE_TURN_ON)
+    with pytest.raises(HomeAssistantError) as err:
+        await _call(hass, service, data)
+    assert err.value.translation_key == "command_not_confirmed"
 
 
 def test_label_fallbacks() -> None:

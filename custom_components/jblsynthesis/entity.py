@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Coroutine
 from typing import Any
 
@@ -16,8 +15,6 @@ from homeassistant.helpers.entity import Entity
 
 from .const import CONF_MANUFACTURER, DEFAULT_MANUFACTURER, DOMAIN
 from .runtime import JBLSynthesisRuntime
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class JBLSynthesisEntity(Entity):
@@ -70,16 +67,20 @@ class JBLSynthesisEntity(Entity):
         """Send a command to the receiver.
 
         No refresh is needed afterwards: state changes flow back as status frames
-        through the dispatcher. A timeout is not treated as failure — this firmware
-        executes several RC5-simulated commands (input, mute, decode mode, power)
-        without echoing the command frame, and the resulting status push arrives
-        within a second regardless. Real rejections carry an answer code and become
-        a HomeAssistantError with a translation key.
+        through the dispatcher. The library confirms each command from the state
+        the receiver reports, because this firmware never echoes the RC5-simulated
+        ones (input, mute, decode mode, power). So a timeout means the receiver did
+        not do what was asked, such as an input it never switched to. That fails
+        the service call, as a rejection with an answer code does, each as a
+        HomeAssistantError with a translation key.
         """
         try:
             await coro
         except TimeoutError as err:
-            _LOGGER.debug("Receiver did not acknowledge a command: %r", err)
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="command_not_confirmed",
+            ) from err
         except ArcamException as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

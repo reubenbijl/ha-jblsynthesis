@@ -165,6 +165,12 @@ Assistant mid-calibration, turn the switch off again before resuming.
 - *Command rejected errors*: the receiver answers commands it cannot currently apply
   (for example during setup-menu use) with an error; the message carries the
   receiver's answer code.
+- *"The receiver did not confirm the change"*: the command was sent, but the receiver
+  never reported the new state, so the change most likely did not happen. The usual
+  cause is a receiver that is still waking up. An input selected just after power-on is
+  already sent again for up to 15 seconds while it wakes. If an automation retries until
+  the receiver is in the right state, set `continue_on_error: true` on those actions, so
+  that one unconfirmed attempt does not stop the run.
 
 ## Removal
 
