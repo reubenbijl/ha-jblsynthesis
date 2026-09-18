@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import PackageNotFoundError
 from unittest.mock import MagicMock, patch
 
 from arcam.fmj.codecs import IncomingAudioFormat, SourceCodes
@@ -34,16 +34,19 @@ async def test_diagnostics(
         "OTHER": complex(1, 2),
     }
 
-    diagnostics = await get_diagnostics_for_config_entry(
-        hass, hass_client, init_integration
-    )
+    with patch(
+        "custom_components.jblsynthesis.diagnostics.version", return_value="2.2.2"
+    ):
+        diagnostics = await get_diagnostics_for_config_entry(
+            hass, hass_client, init_integration
+        )
 
     assert diagnostics["entry"]["host"] == "**REDACTED**"
     assert diagnostics["entry"]["model"] == "SDR-35"
     assert diagnostics["connected"] is True
     assert diagnostics["model"] == "SDR-35"
     assert diagnostics["revision"] == "2.05"
-    assert diagnostics["library_version"] == version("arcam-fmj")
+    assert diagnostics["library_version"] == "2.2.2"
 
     state = diagnostics["state"]
     assert state["POWER"] is True
